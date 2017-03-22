@@ -1,0 +1,234 @@
+package com.bootcamp.controller;
+
+import com.bootcamp.entity.*;
+import com.bootcamp.model.ProjectScoreModel;
+import com.bootcamp.model.ScoreModel;
+import com.bootcamp.service.*;
+import com.bootcamp.utils.JsonConvertor;
+import com.bootcamp.utils.tenpay.JSAPI.OpenIdUtil;
+import com.bootcamp.utils.tenpay.JSAPI.WechatPay;
+import net.sf.json.JSONObject;
+import org.apache.log4j.Logger;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Created by yaobin on 2017/3/9.
+ */
+@Controller
+@RequestMapping("/program")
+@Transactional
+public class ProgramController {
+
+    private static final Logger LOGGER = Logger.getLogger(ProgramController.class);
+
+    private JudgesService judgesService;
+
+    private MatchProjectScoreService matchProjectScoreService;
+
+    private MatchProjectService matchProjectService;
+
+    private MatchService matchService;
+
+    private ScoreItemDetailService scoreItemDetailService;
+
+    private ScoreItemService scoreItemService;
+
+    @RequestMapping(value = "/test",method= RequestMethod.GET)
+    public String test(HttpServletRequest request , HttpServletResponse response){
+        LOGGER.info("测试" );
+        return "/program/index";
+    }
+
+    /**
+     * 进入评分系统PC端主页
+     * @param request
+     * @param response
+     * @return
+     */
+    @RequestMapping(value = "/scoring/system/pc/index",method= RequestMethod.GET)
+    public String scoringSystemIndex(HttpServletRequest request , HttpServletResponse response){
+        LOGGER.info("进入评分系统PC端主页" );
+        List<String> a = new ArrayList<String>();
+        a.add("1");
+        a.add("1");
+        a.add("1");
+        a.add("1");
+        a.add("1");
+        request.setAttribute("a",a);
+        return "/program/score/pc/index";
+    }
+
+    /**
+     * 评分
+     * @param request
+     * @return
+     */
+    @RequestMapping(value="/judges/mobile/index/{falg}",method=RequestMethod.GET)
+    public String judges(HttpServletRequest request,@PathVariable("falg") Integer falg) {
+        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fbootcamp%2fjudges%2fmobile%2fmatch%2f"+falg;
+        return "redirect:https://open.weixin.qq.com/connect/oauth2/authorize?appid="+WechatPay.appid+"&redirect_uri="+path+"&response_type=code&scope=snsapi_base&state=123&connect_redirect=1#wechat_redirect";
+    }
+
+    @RequestMapping(value="/judges/mobile/match/{falg}",method=RequestMethod.GET)
+    public String judgesMatch(HttpServletRequest request,@PathVariable("falg") Integer falg) {
+        String code = request.getParameter("code");
+        JSONObject jsonObject = OpenIdUtil.httpsRequestToJsonObject("https://api.weixin.qq.com/sns/oauth2/access_token?appid="+WechatPay.appid+"&secret="+WechatPay.appsecret+"&code="+code+"&grant_type=authorization_code", "POST", null);
+        Object errorCode = jsonObject.get("errcode");
+        String openid = "";
+        if(errorCode != null) {
+            request.setAttribute("errorCode", errorCode.toString());
+            return "/judges/mobile/msg";
+        }else{
+            openid = jsonObject.getString("openid");
+        }
+        Match match = matchService.findByIsStart(1).get(0);
+        if(match == null){
+            request.setAttribute("msg", "大赛还未开始！！！！");
+            return "/judges/mobile/msg";
+        }
+        Judges judges = judgesService.findByJudgesOpenidAndMatchIdAndIsDelete(openid, match.getMatchId(),0).get(0);
+        if(judges != null){
+            MatchProject matchProject = matchProjectService.findByMatchIdAndIsDelete(match.getMatchId(), 0).get(0);
+            List<ScoreItem> scoreItems = scoreItemService.findByIsEnabled(1);
+            request.setAttribute("judgesId", judges.getJudgesId());
+            request.setAttribute("matchProject", matchProject);
+            request.setAttribute("scoreItems", scoreItems);
+            request.setAttribute("falg", falg);
+            return "/judges/mobile/detail";
+        }
+        else{
+            request.setAttribute("msg", "您不是本次大赛的评委，如有疑问，请于本次大赛组委会联系");
+            return "/judges/mobile/msg";
+        }
+    }
+
+    @RequestMapping(value="/judges/mobile/sub",method=RequestMethod.POST)
+    public String judgesSub(HttpServletRequest request) {
+        String judgesId = request.getParameter("judgesId");
+        String matchProjectId = request.getParameter("matchProjectId");
+        MatchProject matchProject = matchProjectService.findByMatchProjectId(Integer.parseInt(matchProjectId));
+        MatchProjectScore matchProjectScoreOld =  matchProjectScoreService.findByMatchProjectIdAndJugesId(Integer.parseInt(matchProjectId), Integer.parseInt(judgesId)).get(0);
+        if(matchProjectScoreOld!=null){
+            return "redirect:/judges/mobile/index";
+        }
+        List<ScoreItem> scoreItems = scoreItemService.findByIsEnabled(1);
+        int tatal = 0;
+        for(ScoreItem s :scoreItems){
+            int score = Integer.parseInt(request.getParameter(s.getScoreItemId()+""));
+            tatal += score;
+            ScoreItemDetail scoreItemDetail = new ScoreItemDetail(s.getScoreItemName(), s.getScoreItemId(), matchProject.getMatchProjectId(), Integer.parseInt(judgesId), score);
+            scoreItemDetailService.save(scoreItemDetail);
+        }
+        MatchProjectScore matchProjectScore = new MatchProjectScore(Integer.parseInt(matchProjectId), Integer.parseInt(judgesId), tatal);
+        matchProjectScoreService.save(matchProjectScore);
+        List<Judges> judges = judgesService.findByMatchIdAndIsDelete(matchProject.getMatchId(),0);
+        List<MatchProjectScore> matchProjectScores = matchProjectScoreService.findByMatchProjectId(matchProject.getMatchProjectId());
+        if(judges.size()==matchProjectScores.size()){
+            List<Integer> scoreTolList = new ArrayList<Integer>();
+            for(MatchProjectScore m:matchProjectScores){
+                scoreTolList.add(m.getScore());
+            }
+            int scoreTol = 0;
+//				Collections.sort(scoreTolList);
+//				for(int i=1;i<scoreTolList.size()-1;i++){
+//					scoreTol += scoreTolList.get(i);
+//				}
+            for(int i=0;i<scoreTolList.size();i++){
+                scoreTol += scoreTolList.get(i);
+            }
+            double avg = scoreTol;
+            avg = avg/judges.size();
+            DecimalFormat df   = new DecimalFormat("######0.00");
+            matchProject.setTotalScore(Double.parseDouble(df.format(avg)));
+            matchProjectService.update(matchProject);
+        }
+        request.setAttribute("msg", "打分成功！！！");
+        return "redirect:/judges/mobile/index/2";
+
+    }
+
+    @RequestMapping(value="/judges/mobile/findMatchProject",method=RequestMethod.POST)
+    @ResponseBody
+    public String findMatchProject(HttpServletRequest request) {
+        String matchId = request.getParameter("matchId");
+        MatchProject matchProject = matchProjectService.findByMatchIdAndIsDelete(Integer.parseInt(matchId), 0).get(0);
+        return JsonConvertor.getInstance().conver2JsonStr(matchProject) ;
+
+    }
+
+    @RequestMapping(value="/judges/mobile/scoreAjax",method=RequestMethod.POST)
+    @ResponseBody
+    public String judgesScore(HttpServletRequest request) {
+        int matchId = Integer.parseInt(request.getParameter("matchId"));
+        List<MatchProject> matchProjects = matchProjectService.findByMatchIdOrderByTotalScoreDesc(matchId);
+        List<Judges> judges = judgesService.findByMatchIdAndIsDelete(matchId,0);
+        List<ProjectScoreModel> projectScoreModels = new ArrayList<ProjectScoreModel>();
+        ScoreModel scoreModel = new ScoreModel();
+        scoreModel.setJudges(judges);
+        for(MatchProject m : matchProjects){
+            ProjectScoreModel projectScoreModel = new ProjectScoreModel();
+            List<String> strs = new ArrayList<String>();
+            strs.add(m.getPName());
+            strs.add(m.getPDirector());
+            for(Judges j : judges){
+                MatchProjectScore matchProjectScore = matchProjectScoreService.findByMatchProjectIdAndJugesId(m.getMatchProjectId(), j.getJudgesId()).get(0);
+                if(matchProjectScore  == null )
+                    strs.add("还未评分") ;
+                else
+                    strs.add(matchProjectScore.getScore()+"");
+            }
+            strs.add(m.getTotalScore()+"");
+            projectScoreModel.setTd(strs);
+            projectScoreModels.add(projectScoreModel);
+            scoreModel.setProjectScoreModels(projectScoreModels);
+        }
+        return JsonConvertor.getInstance().conver2JsonStr(scoreModel);
+
+    }
+    @RequestMapping(value="/judges/mobile/score",method=RequestMethod.GET)
+    public String judgesScoreIndex(HttpServletRequest request) {
+        Match match = matchService.findByIsStart(1).get(0);
+        request.setAttribute("match", match);
+        return "/judges/mobile/score";
+
+    }
+
+    /**
+     * 评分
+     * @param request
+     * @return
+     */
+    @RequestMapping(value="/judges/mobile/openId",method=RequestMethod.GET)
+    public String openId(HttpServletRequest request) {
+        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fbootcamp%2fshow%2fmobile%2fopenId";
+        return "redirect:https://open.weixin.qq.com/connect/oauth2/authorize?appid="+ WechatPay.appid+"&redirect_uri="+path+"&response_type=code&scope=snsapi_base&state=123&connect_redirect=1#wechat_redirect";
+    }
+
+    @RequestMapping(value="/show/mobile/openId",method=RequestMethod.GET)
+    public String ShowOpenId(HttpServletRequest request){
+        String code = request.getParameter("code");
+        JSONObject jsonObject = OpenIdUtil.httpsRequestToJsonObject("https://api.weixin.qq.com/sns/oauth2/access_token?appid="+WechatPay.appid+"&secret="+WechatPay.appsecret+"&code="+code+"&grant_type=authorization_code", "POST", null);
+        Object errorCode = jsonObject.get("errcode");
+        String openid = "";
+        if(errorCode != null) {
+            request.setAttribute("errorCode", errorCode.toString());
+            return "/judges/mobile/msg";
+        }else{
+            openid = jsonObject.getString("openid");
+        }
+        request.setAttribute("openid", openid);
+        return "/judges/mobile/msg";
+    }
+
+}

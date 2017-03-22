@@ -1,0 +1,34 @@
+body{
+    margin: 0 auto;
+}
+.container {
+    float: left;
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+/*
+.container:hover .side{
+    transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);	/* Safari 和 Chrome */
+/* -moz-transform: rotateY(180deg);	/* Firefox */
+/* }*/
+.container, .front, .back {
+    width: 300px;
+    height: 300px;
+}
+.side {
+    transition: 2s;
+    transform-style: preserve-3d;  /*让其子元素有3D翻转的效果。*/
+    position: relative;
+}
+.front, .back {
+    backface-visibility: hidden; /*将反转了180度的隐藏*/
+    -ms-backface-visibility: hidden;
+    position: absolute;
+}
+.front {
+    background-color: red;
+}
+.back {
+    transform: rotateY(180deg);
+}
