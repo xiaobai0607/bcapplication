@@ -8,6 +8,7 @@ import com.bootcamp.service.LuckDrawService;
 import com.bootcamp.service.LuckyDrawPeopleService;
 import com.bootcamp.service.PrizeService;
 import com.bootcamp.utils.JsonConvertor;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,8 @@ import java.util.List;
 @RequestMapping("/luckDraw")
 @Transactional
 public class LuckDrawController {
+
+    private static final Logger LOGGER = Logger.getLogger(LuckDrawController.class);
 
     @Autowired
     private LuckDrawService luckDrawService;
