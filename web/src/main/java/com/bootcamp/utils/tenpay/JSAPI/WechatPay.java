@@ -1,4 +1,4 @@
-﻿package com.bootcamp.utils.tenpay.JSAPI;
+package com.bootcamp.utils.tenpay.JSAPI;
 
 import com.bootcamp.model.WechatPayEntity;
 import com.bootcamp.utils.tenpay.RequestHandler;
