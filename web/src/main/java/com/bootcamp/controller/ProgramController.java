@@ -164,7 +164,6 @@ public class ProgramController {
         String matchId = request.getParameter("matchId");
         MatchProject matchProject = matchProjectService.findByMatchIdAndIsDelete(Integer.parseInt(matchId), 0).get(0);
         return JsonConvertor.getInstance().conver2JsonStr(matchProject) ;
-
     }
 
     @RequestMapping(value="/judges/mobile/scoreAjax",method=RequestMethod.POST)
@@ -196,6 +195,7 @@ public class ProgramController {
         return JsonConvertor.getInstance().conver2JsonStr(scoreModel);
 
     }
+
     @RequestMapping(value="/judges/mobile/score",method=RequestMethod.GET)
     public String judgesScoreIndex(HttpServletRequest request) {
         Match match = matchService.findByIsStart(1).get(0);
