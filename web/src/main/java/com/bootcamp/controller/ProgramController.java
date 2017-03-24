@@ -48,6 +48,10 @@ public class ProgramController {
     private ScoreItemDetailService scoreItemDetailService;
     @Resource
     private ScoreItemService scoreItemService;
+    @Resource
+    private VotePeopleService votePeopleService;
+    @Resource
+    private VoteTicketService voteTicketService;
 
     @RequestMapping(value = "/test",method= RequestMethod.GET)
     public String test(HttpServletRequest request , HttpServletResponse response){
