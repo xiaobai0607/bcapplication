@@ -23,6 +23,8 @@ public class MatchProject implements java.io.Serializable {
 	private String PName;
 	private String PDirector;
 	private Double totalScore;
+	private int voteNum;
+	private int perScore;
 	private int isDelete;
 	private Date createdTime;
 	private String createdBy;
@@ -148,5 +150,23 @@ public class MatchProject implements java.io.Serializable {
 
 	public void setIsDelete(int isDelete) {
 		this.isDelete = isDelete;
+	}
+
+	@Column(name = "p_vote_num",  length = 10)
+	public int getVoteNum() {
+		return voteNum;
+	}
+
+	public void setVoteNum(int voteNum) {
+		this.voteNum = voteNum;
+	}
+
+	@Column(name = "p_per_score", nullable = false, length = 10)
+	public int getPerScore() {
+		return perScore;
+	}
+
+	public void setPerScore(int perScore) {
+		this.perScore = perScore;
 	}
 }

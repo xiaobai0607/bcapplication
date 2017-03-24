@@ -21,6 +21,7 @@ public class Match implements java.io.Serializable {
 	private Integer matchId;
 	private String matchName;
 	private String matchLocation;
+	private int isVote;
 	private int isStart;
 	private Date createdTime;
 	private String createdBy;
@@ -118,4 +119,12 @@ public class Match implements java.io.Serializable {
 		this.updatedBy = updatedBy;
 	}
 
+	@Column(name = "is_vote", nullable = false, length = 1)
+	public int getIsVote() {
+		return isVote;
+	}
+
+	public void setIsVote(int isVote) {
+		this.isVote = isVote;
+	}
 }

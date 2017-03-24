@@ -24,31 +24,107 @@
     <script type="text/javascript" src="${bc}/js/jquery-2.1.1.min.js"></script>
     <link rel="stylesheet" href="${bc}/css/program_index.css">
 </head>
-<body>
+<body style="background: url(${match.matchLocation}) no-repeat  ;background-size: cover;">
+<div>
+${match.matchName}
+</div>
+<div style="margin: 0 auto;width: 1000px;height: 100px;text-align: center">
+    <span style="line-height: 100px;vertical-align: middle;color: white;font-size: 50px;">${matchProject.PName}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: white;line-height: 100px;vertical-align: bottom;">项目负责人：${matchProject.PDirector}</span>
+</div>
 <div style="margin: 0 auto;width: 1000px;text-align: center;">
-    <c:forEach var="a" items="${a}">
-        <div class="container">
-            <div class="side">
-                <div class="front">
-                    <!-- 正面 -->
-                </div>
-                <div class="back">
-                    正在评分
-                </div>
+    <c:forEach var="judges" items="${judgess}">
+        <div class="side" style="width: 200px;height: 300px;float: left;">
+            <div id="point${judges.judgesId}" style="width: 200px;height: 200px;background: url(${judges.judgesLocation}) no-repeat  ;background-size: cover;line-height: 200px;vertical-align: middle;color: brown;font-size: 30px;">
+                打分中。。。
+            </div>
+            <div style="width: 200px;height: 100px;font-size: 50px;color: white;">
+                    ${judges.judgesName}
             </div>
         </div>
     </c:forEach>
 </div>
-
+<div style="margin: 0 auto;width: 1000px;text-align: center;height: 100%;position: absolute;z-index: 2;display: none;" id="showDiv">
+    <div style="width: 1000px;height: 100px;margin-top: 100px;">
+        <div style="width: 50%;height: 100px;text-align: center;" id="juScore">
+            <p style="vertical-align: middle;line-height: 100px;"></p>
+        </div>
+        <div style="width: 50%;height: 100px;text-align: center;" id="totalVote">
+            <p style="vertical-align: middle;line-height: 100px;"></p>
+        </div>
+    </div>
+    <div style="width: 1000px;height: 100px;text-align: center" id="totalScore">
+        <p style="vertical-align: middle;line-height: 100px;"></p>
+    </div>
+    <div style="width: 1000px;height: 50px;text-align: center" id="scoreOrder">
+        <p style="vertical-align: middle;line-height: 50px;"></p>
+    </div>
+</div>
+<input type="hidden" name="matchProjectId" id="matchProjectId" value="${matchProject.matchProjectId}">
+<input type="hidden" name="perScore" id="perScore" value="${matchProject.perScore}">
+<input type="hidden" name="matchId" id="matchId" value="${match.matchId}">
 </body>
 <script>
-    $(function(){
-        setInterval(function(){
-            $(".side").css("transform","rotateY(180deg)");
-            setTimeout(function () {
-                $(".side").css("transform","rotateY(0deg)");;
-            }, 2000);
-        },4000);
+    var matchProjectId = 0;
+    $(document).ready(function(){
+        setInterval(function () {
+            matchProjectId = $("#matchProjectId").val();
+            matchId = $("#matchId").val();
+            var url = "/web/program/judges/mobile/projectScoreAjax";
+               $.post(url, {
+                   'matchProjectId': matchProjectId,
+                   'matchId':matchId
+               }, function (data) {
+                   if(data == 0){
+                        return;
+                   }
+                   var matchProjectScores = jQuery.parseJSON(data);
+                   for(var i = 0 ;i < matchProjectScores.length ; i++){
+                       $("#point"+matchProjectScores[i].jugesId).css("font-size","100px");
+                   }
+
+                   $(".side").css("transform","rotateY(360deg)");
+
+                  for(var i = 0 ;i < matchProjectScores.length ; i++){
+                      $("#point"+matchProjectScores[i].jugesId).html(matchProjectScores[i].score);
+                  }
+                   $.post("/web/program/judges/mobile/voteAjax", {
+                       'matchProjectId': matchProjectId,
+                       'matchId':matchId
+                   }, function (data) {
+                       var projectScoreModel = jQuery.parseJSON(data);
+                       var matchProject = projectScoreModel.matchProject;
+                       var matchProjectModels = projectScoreModel.matchProjectModels;
+                       if(matchProject.voteNum != null && matchProject.voteNum != ""){
+                           perScore = $("#perScore").val();
+                           if(${isVote eq 1}){
+                               $("#juScore").css("display","block")
+                               $("#totalVote").css("display","block")
+                               $("#juScore").html("<p style=\"vertical-align: middle;line-height: 100px;\">评委总分："+matchProject.totalScore+"</p>");
+                               $("#totalVote").html("<p style=\"vertical-align: middle;line-height: 100px;\">观众票数："+matchProject.voteNum+"</p>");
+                               $("#totalScore").html("<p style=\"vertical-align: middle;line-height: 100px;\">总分："+(matchProject.totalScore*perScore+matchProject.voteNum*(10-perScore))/10+"</p>");
+                           }
+                           else{
+                               $("#juScore").css("display","none")
+                               $("#totalVote").css("display","none")
+                               $("#totalScore").html("<p style=\"vertical-align: middle;line-height: 100px;\">总分："+matchProject.totalScore+"</p>");
+                           }
+                           var str = "";
+                           for(var i = 0 ;i < matchProjectModels.length ; i++){
+                               if(${isVote eq 1}) {
+                                   str += "<p style=\"vertical-align: middle;line-height: 50px;\">项目名称："+matchProjectModels[i].matchProject.PName+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;得分："+(matchProjectModels[i].matchProject.totalScore*perScore+matchProjectModels[i].matchProject.voteNum*(10-perScore))/10+"</p>";
+                               }
+                               else{
+                                   str += "<p style=\"vertical-align: middle;line-height: 50px;\">项目名称："+matchProjectModels[i].matchProject.PName+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;得分："+matchProjectModels[i].matchProject.totalScore+"</p>";
+                               }
+                           }
+                           $("#scoreOrder").html(str);
+                       }
+                       $("#showDiv").css("display","block")
+                       window.clearInterval;
+                   });
+            });
+        },3000);
     });
+
 </script>
 </html>

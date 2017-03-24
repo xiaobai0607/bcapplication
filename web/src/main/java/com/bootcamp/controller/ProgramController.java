@@ -1,6 +1,7 @@
 package com.bootcamp.controller;
 
 import com.bootcamp.entity.*;
+import com.bootcamp.model.MatchProjectModel;
 import com.bootcamp.model.ProjectScoreModel;
 import com.bootcamp.model.ScoreModel;
 import com.bootcamp.service.*;
@@ -16,10 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -32,16 +36,17 @@ public class ProgramController {
 
     private static final Logger LOGGER = Logger.getLogger(ProgramController.class);
 
+    @Resource
     private JudgesService judgesService;
-
+    @Resource
     private MatchProjectScoreService matchProjectScoreService;
-
+    @Resource
     private MatchProjectService matchProjectService;
-
+    @Resource
     private MatchService matchService;
-
+    @Resource
     private ScoreItemDetailService scoreItemDetailService;
-
+    @Resource
     private ScoreItemService scoreItemService;
 
     @RequestMapping(value = "/test",method= RequestMethod.GET)
@@ -108,7 +113,7 @@ public class ProgramController {
             return "/judges/mobile/detail";
         }
         else{
-            request.setAttribute("msg", "您不是本次大赛的评委，如有疑问，请于本次大赛组委会联系");
+            request.setAttribute("msg", "您不是本次大赛的评委，如有疑问，请与本次大赛组委会联系");
             return "/judges/mobile/msg";
         }
     }
@@ -170,7 +175,7 @@ public class ProgramController {
     @ResponseBody
     public String judgesScore(HttpServletRequest request) {
         int matchId = Integer.parseInt(request.getParameter("matchId"));
-        List<MatchProject> matchProjects = matchProjectService.findByMatchIdOrderByTotalScoreDesc(matchId);
+        List<MatchProject> matchProjects = matchProjectService.findByMatchIdOrderByTotalScoreDesc(matchId,0);
         List<Judges> judges = judgesService.findByMatchIdAndIsDelete(matchId,0);
         List<ProjectScoreModel> projectScoreModels = new ArrayList<ProjectScoreModel>();
         ScoreModel scoreModel = new ScoreModel();
@@ -196,12 +201,62 @@ public class ProgramController {
 
     }
 
+    @RequestMapping(value="/judges/mobile/projectScoreAjax",method=RequestMethod.POST)
+    @ResponseBody
+    public String projectScoreAjax(HttpServletRequest request) {
+        int matchId = Integer.parseInt(request.getParameter("matchId"));
+        int matchProjectId = Integer.parseInt(request.getParameter("matchProjectId"));
+        List<MatchProjectScore> matchProjectScores = matchProjectScoreService.findByMatchProjectId(matchProjectId);
+        List<Judges> judges = judgesService.findByMatchIdAndIsDelete(matchId,0);
+        if(matchProjectScores.size() != judges.size()){
+            return "0";
+        }
+        return JsonConvertor.getInstance().conver2JsonStr(matchProjectScores);
+
+    }
+
+    @RequestMapping(value="/judges/mobile/voteAjax",method=RequestMethod.POST)
+    @ResponseBody
+    public String voteAjax(HttpServletRequest request) {
+        Match match = matchService.findByIsStart(1).get(0);
+        ProjectScoreModel ProjectScoreModel = new ProjectScoreModel();
+        int matchId = Integer.parseInt(request.getParameter("matchId"));
+        int matchProjectId = Integer.parseInt(request.getParameter("matchProjectId"));
+        List<MatchProject> matchProjects = matchProjectService.findByMatchIdOrderByTotalScoreDesc(matchId,0);
+        List<MatchProjectModel> matchProjectModels = new ArrayList<MatchProjectModel>();
+        for(MatchProject m : matchProjects){
+            MatchProjectModel matchProjectModel = new MatchProjectModel();
+            matchProjectModel.setMatchProject(m);
+            if(match.getIsVote() == 0){
+                matchProjectModel.setTotalScorePre(m.getTotalScore());
+            }
+            else{
+                matchProjectModel.setTotalScorePre((m.getTotalScore()*m.getPerScore()+m.getVoteNum()*(10-m.getPerScore()))/10);
+            }
+            matchProjectModels.add(matchProjectModel);
+        }
+        MatchProject matchProject = matchProjectService.findByMatchProjectId(matchProjectId);
+        //sort by date
+        Collections.sort(matchProjectModels,new Comparator<MatchProjectModel>(){
+            public int compare(MatchProjectModel arg0, MatchProjectModel arg1) {
+                return arg1.getTotalScorePre().compareTo(arg0.getTotalScorePre());
+            }
+        });
+        ProjectScoreModel.setMatchProject(matchProject);
+        ProjectScoreModel.setMatchProjectModels(matchProjectModels);
+        return JsonConvertor.getInstance().conver2JsonStr(ProjectScoreModel);
+
+    }
+
     @RequestMapping(value="/judges/mobile/score",method=RequestMethod.GET)
     public String judgesScoreIndex(HttpServletRequest request) {
         Match match = matchService.findByIsStart(1).get(0);
+        List<Judges> judgess = judgesService.findByMatchIdAndIsDelete(match.getMatchId(),0);
+        MatchProject matchProject = matchProjectService.findByMatchId(match.getMatchId(),0).get(0);
         request.setAttribute("match", match);
-        return "/judges/mobile/score";
-
+        request.setAttribute("judgess", judgess);
+        request.setAttribute("matchProject", matchProject);
+        return "/program/score/pc/index";
     }
 
     /**

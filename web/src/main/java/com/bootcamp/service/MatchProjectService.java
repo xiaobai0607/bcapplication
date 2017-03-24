@@ -7,6 +7,7 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
  * Created by yaobin on 2017/3/10.
  */
 @Service("matchProjectService")
+@Transactional
 public class MatchProjectService  {
 
     @Autowired
@@ -36,10 +38,16 @@ public class MatchProjectService  {
         matchProjectDao.save(matchProject);
     }
 
-    public List<MatchProject> findByMatchIdOrderByTotalScoreDesc(int matchId){
+    public List<MatchProject> findByMatchIdOrderByTotalScoreDesc(int matchId , int isDelete){
         DetachedCriteria dc = matchProjectDao.createDetachedCriteria();
         dc.addOrder(Order.desc("totalScore"));
-        dc.add(Restrictions.eq("matchId",matchId));
+        dc.add(Restrictions.eq("matchId",matchId)).add(Restrictions.eq("isDelete",isDelete));;
+        return matchProjectDao.find(dc);
+    }
+
+    public List<MatchProject> findByMatchId(int matchId , int isDelete){
+        DetachedCriteria dc = matchProjectDao.createDetachedCriteria();
+        dc.add(Restrictions.eq("matchId",matchId)).add(Restrictions.eq("isDelete",isDelete));;
         return matchProjectDao.find(dc);
     }
 
