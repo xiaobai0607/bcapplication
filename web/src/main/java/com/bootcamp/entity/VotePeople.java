@@ -13,9 +13,9 @@ import static javax.persistence.GenerationType.IDENTITY;
 @Table(name = "vote_people", catalog = "bootcamp")
 public class VotePeople implements java.io.Serializable {
 
-	private Integer VotePeopleId;
-	private String VotePeopleIdOpenId;
-	private String MatchId;
+	private Integer votePeopleId;
+	private String votePeopleIdOpenId;
+	private int matchId;
 
 
 	public VotePeople() {
@@ -28,29 +28,29 @@ public class VotePeople implements java.io.Serializable {
 
 	@Column(name = "vote_id", unique = true, nullable = false)
 	public Integer getVotePeopleId() {
-		return VotePeopleId;
+		return votePeopleId;
 	}
 
 	public void setVotePeopleId(Integer votePeopleId) {
-		VotePeopleId = votePeopleId;
+		this.votePeopleId = votePeopleId;
 	}
 
 	@Column(name = "vote_openid", nullable = false, length = 100)
 	public String getVotePeopleIdOpenId() {
-		return VotePeopleIdOpenId;
+		return votePeopleIdOpenId;
 	}
 
 	public void setVotePeopleIdOpenId(String votePeopleIdOpenId) {
-		VotePeopleIdOpenId = votePeopleIdOpenId;
+		this.votePeopleIdOpenId = votePeopleIdOpenId;
 	}
 
 	@Column(name = "match_id", nullable = false)
-	public String getMatchId() {
-		return MatchId;
+	public int getMatchId() {
+		return matchId;
 	}
 
-	public void setMatchId(String matchId) {
-		MatchId = matchId;
+	public void setMatchId(int matchId) {
+		this.matchId = matchId;
 	}
 
 }

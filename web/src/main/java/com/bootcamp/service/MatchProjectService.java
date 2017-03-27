@@ -45,9 +45,9 @@ public class MatchProjectService  {
         return matchProjectDao.find(dc);
     }
 
-    public List<MatchProject> findByMatchId(int matchId , int isDelete){
+    public List<MatchProject> findByMatchId(int matchId ){
         DetachedCriteria dc = matchProjectDao.createDetachedCriteria();
-        dc.add(Restrictions.eq("matchId",matchId)).add(Restrictions.eq("isDelete",isDelete));;
+        dc.add(Restrictions.eq("matchId",matchId));;
         return matchProjectDao.find(dc);
     }
 

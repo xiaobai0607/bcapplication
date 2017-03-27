@@ -9,6 +9,7 @@ public class ProjectScoreModel {
 	private List<String> td;
 	private List<MatchProjectModel> matchProjectModels;
 	private MatchProject matchProject;
+	private MatchProject matchProjectNew;
 
 	public List<String> getTd() {
 		return td;
@@ -33,5 +34,13 @@ public class ProjectScoreModel {
 
 	public void setMatchProjectModels(List<MatchProjectModel> matchProjectModels) {
 		this.matchProjectModels = matchProjectModels;
+	}
+
+	public MatchProject getMatchProjectNew() {
+		return matchProjectNew;
+	}
+
+	public void setMatchProjectNew(MatchProject matchProjectNew) {
+		this.matchProjectNew = matchProjectNew;
 	}
 }

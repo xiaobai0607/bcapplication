@@ -23,7 +23,7 @@ public class MatchProject implements java.io.Serializable {
 	private String PName;
 	private String PDirector;
 	private Double totalScore;
-	private int voteNum;
+	private String voteNum;
 	private int perScore;
 	private int isDelete;
 	private Date createdTime;
@@ -153,11 +153,11 @@ public class MatchProject implements java.io.Serializable {
 	}
 
 	@Column(name = "p_vote_num",  length = 10)
-	public int getVoteNum() {
+	public String getVoteNum() {
 		return voteNum;
 	}
 
-	public void setVoteNum(int voteNum) {
+	public void setVoteNum(String voteNum) {
 		this.voteNum = voteNum;
 	}
 

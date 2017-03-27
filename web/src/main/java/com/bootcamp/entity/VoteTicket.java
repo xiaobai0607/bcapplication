@@ -13,17 +13,14 @@ import static javax.persistence.GenerationType.IDENTITY;
 public class VoteTicket implements java.io.Serializable {
 
 	private Integer VoteTicketId;
-	private String MatchProjectId;
-
+	private int matchProjectId;
+	private String votePeopleIdOpenId;
 
 	public VoteTicket() {
 	}
 
-
-
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
-
 	@Column(name = "vote_ticket_id", unique = true, nullable = false)
 	public Integer getVoteTicketId() {
 		return VoteTicketId;
@@ -34,12 +31,22 @@ public class VoteTicket implements java.io.Serializable {
 	}
 
 	@Column(name = "vote_matct_project_id", nullable = false, length = 100)
-	public String getMatchProjectId() {
-		return MatchProjectId;
+	public int getMatchProjectId() {
+		return matchProjectId;
 	}
 
-	public void setMatchProjectId(String matchProjectId) {
-		MatchProjectId = matchProjectId;
+	public void setMatchProjectId(int matchProjectId) {
+		this.matchProjectId = matchProjectId;
 	}
+
+	@Column(name = "vote_openid", nullable = false, length = 300)
+	public String getVotePeopleIdOpenId() {
+		return votePeopleIdOpenId;
+	}
+
+	public void setVotePeopleIdOpenId(String votePeopleIdOpenId) {
+		this.votePeopleIdOpenId = votePeopleIdOpenId;
+	}
+
 
 }

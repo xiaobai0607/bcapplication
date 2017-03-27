@@ -52,6 +52,8 @@ public class ProgramController {
     private VotePeopleService votePeopleService;
     @Resource
     private VoteTicketService voteTicketService;
+    @Resource
+    private AdminService adminService;
 
     @RequestMapping(value = "/test",method= RequestMethod.GET)
     public String test(HttpServletRequest request , HttpServletResponse response){
@@ -85,7 +87,7 @@ public class ProgramController {
      */
     @RequestMapping(value="/judges/mobile/index/{falg}",method=RequestMethod.GET)
     public String judges(HttpServletRequest request,@PathVariable("falg") Integer falg) {
-        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fbootcamp%2fjudges%2fmobile%2fmatch%2f"+falg;
+        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fweb%2fprogram%2fjudges%2fmobile%2fmatch%2f"+falg;
         return "redirect:https://open.weixin.qq.com/connect/oauth2/authorize?appid="+WechatPay.appid+"&redirect_uri="+path+"&response_type=code&scope=snsapi_base&state=123&connect_redirect=1#wechat_redirect";
     }
 
@@ -223,19 +225,20 @@ public class ProgramController {
     @ResponseBody
     public String voteAjax(HttpServletRequest request) {
         Match match = matchService.findByIsStart(1).get(0);
-        ProjectScoreModel ProjectScoreModel = new ProjectScoreModel();
+        ProjectScoreModel projectScoreModel = new ProjectScoreModel();
         int matchId = Integer.parseInt(request.getParameter("matchId"));
         int matchProjectId = Integer.parseInt(request.getParameter("matchProjectId"));
+        MatchProject matchProjectNew = matchProjectService.findByMatchIdAndIsDelete(match.getMatchId(), 0).get(0);
         List<MatchProject> matchProjects = matchProjectService.findByMatchIdOrderByTotalScoreDesc(matchId,0);
         List<MatchProjectModel> matchProjectModels = new ArrayList<MatchProjectModel>();
         for(MatchProject m : matchProjects){
             MatchProjectModel matchProjectModel = new MatchProjectModel();
             matchProjectModel.setMatchProject(m);
-            if(match.getIsVote() == 0){
+            if(m.getVoteNum()==null || "".equals(m.getVoteNum())){
                 matchProjectModel.setTotalScorePre(m.getTotalScore());
             }
             else{
-                matchProjectModel.setTotalScorePre((m.getTotalScore()*m.getPerScore()+m.getVoteNum()*(10-m.getPerScore()))/10);
+                matchProjectModel.setTotalScorePre((m.getTotalScore()*m.getPerScore()+ Integer.parseInt(m.getVoteNum())*(10-m.getPerScore()))/10);
             }
             matchProjectModels.add(matchProjectModel);
         }
@@ -246,9 +249,10 @@ public class ProgramController {
                 return arg1.getTotalScorePre().compareTo(arg0.getTotalScorePre());
             }
         });
-        ProjectScoreModel.setMatchProject(matchProject);
-        ProjectScoreModel.setMatchProjectModels(matchProjectModels);
-        return JsonConvertor.getInstance().conver2JsonStr(ProjectScoreModel);
+        projectScoreModel.setMatchProject(matchProject);
+        projectScoreModel.setMatchProjectModels(matchProjectModels);
+        projectScoreModel.setMatchProjectNew(matchProjectNew);
+        return JsonConvertor.getInstance().conver2JsonStr(projectScoreModel);
 
     }
 
@@ -256,7 +260,7 @@ public class ProgramController {
     public String judgesScoreIndex(HttpServletRequest request) {
         Match match = matchService.findByIsStart(1).get(0);
         List<Judges> judgess = judgesService.findByMatchIdAndIsDelete(match.getMatchId(),0);
-        MatchProject matchProject = matchProjectService.findByMatchId(match.getMatchId(),0).get(0);
+        MatchProject matchProject = matchProjectService.findByMatchIdAndIsDelete(match.getMatchId(),0).get(0);
         request.setAttribute("match", match);
         request.setAttribute("judgess", judgess);
         request.setAttribute("matchProject", matchProject);
@@ -268,13 +272,13 @@ public class ProgramController {
      * @param request
      * @return
      */
-    @RequestMapping(value="/judges/mobile/openId",method=RequestMethod.GET)
+    @RequestMapping(value="/vote/mobile/openId",method=RequestMethod.GET)
     public String openId(HttpServletRequest request) {
-        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fbootcamp%2fshow%2fmobile%2fopenId";
+        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fweb%2fprogram%2fvote%2fshow%2fmobile%2fqrcode";
         return "redirect:https://open.weixin.qq.com/connect/oauth2/authorize?appid="+ WechatPay.appid+"&redirect_uri="+path+"&response_type=code&scope=snsapi_base&state=123&connect_redirect=1#wechat_redirect";
     }
 
-    @RequestMapping(value="/show/mobile/openId",method=RequestMethod.GET)
+    @RequestMapping(value="/vote/show/mobile/qrcode",method=RequestMethod.GET)
     public String ShowOpenId(HttpServletRequest request){
         String code = request.getParameter("code");
         JSONObject jsonObject = OpenIdUtil.httpsRequestToJsonObject("https://api.weixin.qq.com/sns/oauth2/access_token?appid="+WechatPay.appid+"&secret="+WechatPay.appsecret+"&code="+code+"&grant_type=authorization_code", "POST", null);
@@ -286,8 +290,80 @@ public class ProgramController {
         }else{
             openid = jsonObject.getString("openid");
         }
-        request.setAttribute("openid", openid);
-        return "/judges/mobile/msg";
+        request.setAttribute("myOpen", openid);
+        return "/program/vote/qrcode";
+    }
+
+    @RequestMapping(value="/qrcode/sure",method=RequestMethod.GET)
+    public String qrcodeSure(HttpServletRequest request) {
+        String myOpen = request.getParameter("myOpen");
+        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fweb%2fprogram%2fvote%2fsure%2fopenId%2f"+myOpen;
+        return "redirect:https://open.weixin.qq.com/connect/oauth2/authorize?appid="+ WechatPay.appid+"&redirect_uri="+path+"&response_type=code&scope=snsapi_base&state=123&connect_redirect=1#wechat_redirect";
+    }
+
+    @RequestMapping(value="/vote/sure/openId/{myOpen}",method=RequestMethod.GET)
+    public String sureOpenId(HttpServletRequest request,@PathVariable("myOpen") String myOpen){
+        String code = request.getParameter("code");
+        JSONObject jsonObject = OpenIdUtil.httpsRequestToJsonObject("https://api.weixin.qq.com/sns/oauth2/access_token?appid="+WechatPay.appid+"&secret="+WechatPay.appsecret+"&code="+code+"&grant_type=authorization_code", "POST", null);
+        Object errorCode = jsonObject.get("errcode");
+        String openid = "";
+        if(errorCode != null) {
+            return "/program/vote/error";
+        }else{
+            openid = jsonObject.getString("openid");
+        }
+        if(adminService.findByOpenIdAndIsDelete(openid,"0").size()<=0){
+            return "";
+        }
+
+        Match match = matchService.findByIsStart(1).get(0);
+        if(votePeopleService.findByOpenIdAndMatchId(myOpen,match.getMatchId()).size()>0){
+            return "";
+        }
+        VotePeople votePeople = new VotePeople();
+        votePeople.setMatchId(match.getMatchId());
+        votePeople.setVotePeopleIdOpenId(myOpen);
+        votePeopleService.save(votePeople);
+        return "/program/vote/success";
+    }
+
+    @RequestMapping(value="/into/votes",method=RequestMethod.GET)
+    public String intoVote(HttpServletRequest request){
+
+        return "/program/vote/index";
+    }
+
+    @RequestMapping(value="/vote/mobile/sure",method=RequestMethod.POST)
+    public String voteSure(HttpServletRequest request) {
+        String path = "http%3a%2f%2fwww.bootcamp.org.cn%2fweb%2fprogram%2fpeople%2fvote";
+        return "redirect:https://open.weixin.qq.com/connect/oauth2/authorize?appid="+ WechatPay.appid+"&redirect_uri="+path+"&response_type=code&scope=snsapi_base&state=123&connect_redirect=1#wechat_redirect";
+    }
+
+    @RequestMapping(value="/people/vote",method=RequestMethod.GET)
+    public String peopleVote(HttpServletRequest request){
+        String code = request.getParameter("code");
+        JSONObject jsonObject = OpenIdUtil.httpsRequestToJsonObject("https://api.weixin.qq.com/sns/oauth2/access_token?appid="+WechatPay.appid+"&secret="+WechatPay.appsecret+"&code="+code+"&grant_type=authorization_code", "POST", null);
+        Object errorCode = jsonObject.get("errcode");
+        String openid = "";
+        if(errorCode != null) {
+            return "/program/vote/error";
+        }else{
+            openid = jsonObject.getString("openid");
+        }
+        Match match = matchService.findByIsStart(1).get(0);
+        if(votePeopleService.findByOpenIdAndMatchId(openid,match.getMatchId()).size()<=0){
+            return "/program/vote/error";
+        }
+        MatchProject matchProject = matchProjectService.findByMatchIdAndIsDelete(match.getMatchId(),0).get(0);
+        if(voteTicketService.findByVotePeopleIdOpenIdAndMatchProjectId(openid,matchProject.getMatchProjectId()).size()>0){
+            return "/program/vote/error";
+        }
+        VoteTicket voteTicket = new VoteTicket();
+
+        voteTicket.setMatchProjectId(matchProject.getMatchProjectId());
+        voteTicket.setVotePeopleIdOpenId(openid);
+        voteTicketService.save(voteTicket);
+        return "/program/vote/success";
     }
 
 }
