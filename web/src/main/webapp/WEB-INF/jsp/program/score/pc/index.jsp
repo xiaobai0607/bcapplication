@@ -43,20 +43,17 @@ ${match.matchName}
         </div>
     </c:forEach>
 </div>
-<div style="left:50%;width: 1000px;text-align: center;position: absolute;z-index: 2;display: none;margin-left: -500px;height: 100%;color: white;font-size: 50px;" id="showDiv">
-    <div style="width: 1000px;height: 100px;margin-top: 100px;">
-        <div style="width: 50%;height: 100px;text-align: center;float: left;" id="juScore">
-            <p style="vertical-align: middle;line-height: 100px;"></p>
+<div style="left:50%;width: 1000px;text-align: center;position: absolute;z-index: 2;display: none;margin-left: -500px;color: white;font-size: 40px;" id="showDiv">
+    <div style="width: 1000px;height: 50px;text-align: center;color: brown;font-size: 50px;" id="totalScore">
+    </div>
+    <div style="width: 1000px;height: 50px;margin-top: 50px;">
+        <div style="width: 50%;height: 50px;text-align: center;float: left;" id="juScore">
         </div>
-        <div style="width: 50%;height: 100px;text-align: center;float: left;" id="totalVote">
-            <p style="vertical-align: middle;line-height: 100px;"></p>
+        <div style="width: 50%;height: 50px;text-align: center;float: left;" id="totalVote">
         </div>
     </div>
-    <div style="width: 1000px;height: 100px;text-align: center" id="totalScore">
-        <p style="vertical-align: middle;line-height: 100px;"></p>
-    </div>
-    <div style="width: 1000px;height: 50px;text-align: center" id="scoreOrder">
-        <p style="vertical-align: middle;line-height: 50px;"></p>
+
+    <div style="width: 1000px;height: 50px;text-align: center;" id="scoreOrder">
     </div>
 </div>
 <input type="hidden" name="matchProjectId" id="matchProjectId" value="${matchProject.matchProjectId}">
@@ -95,44 +92,45 @@ ${match.matchName}
                        var matchProject = projectScoreModel.matchProject;
                        var matchProjectModels = projectScoreModel.matchProjectModels;
                        var matchProjectNew = projectScoreModel.matchProjectNew;
-                       if(matchProject.voteNum != null && matchProject.voteNum != ""){
+                       if((matchProject.voteNum != null && matchProject.voteNum != "")||${match.isVote eq 0}){
                            $("#judgesDiv").css("display","none");
                            perScore = $("#perScore").val();
                            if(${match.isVote eq 1}){
                                $("#juScore").css("display","block")
                                $("#totalVote").css("display","block")
-                               $("#juScore").html("<p style=\"vertical-align: middle;line-height: 100px;\">评委总分："+matchProject.totalScore+"</p>");
-                               $("#totalVote").html("<p style=\"vertical-align: middle;line-height: 100px;\">观众票数："+matchProject.voteNum+"</p>");
-                               $("#totalScore").html("<p style=\"vertical-align: middle;line-height: 100px;\">总分："+(matchProject.totalScore*perScore+matchProject.voteNum*(10-perScore))/10+"</p>");
+                               $("#juScore").html("评委总分："+matchProject.totalScore);
+                               $("#totalVote").html("观众票数："+matchProject.voteNum);
+                               $("#totalScore").html("总分："+(matchProject.totalScore*perScore+matchProject.voteNum*(10-perScore))/10);
                            }
                            else{
                                $("#juScore").css("display","none")
                                $("#totalVote").css("display","none")
-                               $("#totalScore").html("<p style=\"vertical-align: middle;line-height: 100px;\">总分："+matchProject.totalScore+"</p>");
+                               $("#totalScore").html("总分："+matchProject.totalScore);
                            }
-                           var str = "";
+                           var str = "<hr width=\"1000px\" color=\"white\" size=\"2px;\" />";
                            for(var i = 0 ;i < matchProjectModels.length ; i++){
                                if(${match.isVote eq 1}) {
-                                   str += "<p style=\"vertical-align: middle;line-height: 50px;\">项目名称："+matchProjectModels[i].matchProject.PName+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;得分："+(matchProjectModels[i].matchProject.totalScore*perScore+matchProjectModels[i].matchProject.voteNum*(10-perScore))/10+"</p>";
+                                   str += "项目名称："+matchProjectModels[i].matchProject.PName+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;得分："+(matchProjectModels[i].matchProject.totalScore*perScore+matchProjectModels[i].matchProject.voteNum*(10-perScore))/10+"<br>";
                                }
                                else{
-                                   str += "<p style=\"vertical-align: middle;line-height: 50px;\">项目名称："+matchProjectModels[i].matchProject.PName+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;得分："+matchProjectModels[i].matchProject.totalScore+"</p>";
+                                   str += "项目名称："+matchProjectModels[i].matchProject.PName+"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;得分："+matchProjectModels[i].matchProject.totalScore+"<br>";
                                }
                            }
                            $("#scoreOrder").html(str);
+                           $("#showDiv").css("display","block");
+                           if(matchProjectNew.matchProjectId != matchProjectId){
+                               $("#showDiv").css("display","none");
+                               $("#judgesDiv").css("display","block");
+                               $("#matchProjectId").val(matchProjectNew.matchProjectId);
+                               $("div[id*='point']").each(function(){
+                                   $(this).css("font-size","30px");
+                                   $(this).html("打分中。。。");
+                               });
+                               $("#sPName").html(matchProjectNew.PName);
+                               $("#sPName").html("项目负责人："+matchProjectNew.PDirector);
+                           }
                        }
-                       $("#showDiv").css("display","block");
-                        if(matchProjectNew.matchProjectId != matchProjectId){
-                            $("#showDiv").css("display","none");
-                            $("#judgesDiv").css("display","block");
-                            $("#matchProjectId").val(matchProjectNew.matchProjectId);
-                            $("div[id*='point']").each(function(){
-                                $(this).css("font-size","30px");
-                                $(this).html("打分中。。。");
-                            });
-                            $("#sPName").html(matchProjectNew.PName);
-                            $("#sPName").html("项目负责人："+matchProjectNew.PDirector);
-                        }
+
                    });
             });
         },3000);

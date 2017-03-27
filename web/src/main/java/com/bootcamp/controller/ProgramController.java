@@ -229,7 +229,7 @@ public class ProgramController {
         int matchId = Integer.parseInt(request.getParameter("matchId"));
         int matchProjectId = Integer.parseInt(request.getParameter("matchProjectId"));
         MatchProject matchProjectNew = matchProjectService.findByMatchIdAndIsDelete(match.getMatchId(), 0).get(0);
-        List<MatchProject> matchProjects = matchProjectService.findByMatchIdOrderByTotalScoreDesc(matchId,0);
+        List<MatchProject> matchProjects = matchProjectService.findByMatchId(matchId);
         List<MatchProjectModel> matchProjectModels = new ArrayList<MatchProjectModel>();
         for(MatchProject m : matchProjects){
             MatchProjectModel matchProjectModel = new MatchProjectModel();
@@ -246,7 +246,7 @@ public class ProgramController {
         //sort by date
         Collections.sort(matchProjectModels,new Comparator<MatchProjectModel>(){
             public int compare(MatchProjectModel arg0, MatchProjectModel arg1) {
-                return arg1.getTotalScorePre().compareTo(arg0.getTotalScorePre());
+                return arg0.getTotalScorePre().compareTo(arg1.getTotalScorePre());
             }
         });
         projectScoreModel.setMatchProject(matchProject);
@@ -313,12 +313,14 @@ public class ProgramController {
             openid = jsonObject.getString("openid");
         }
         if(adminService.findByOpenIdAndIsDelete(openid,"0").size()<=0){
-            return "";
+            request.setAttribute("msg", "您不是本次大赛的管理员！！");
+            return "/program/vote/error";
         }
 
         Match match = matchService.findByIsStart(1).get(0);
         if(votePeopleService.findByOpenIdAndMatchId(myOpen,match.getMatchId()).size()>0){
-            return "";
+            request.setAttribute("msg", "该人员入场二维码已被确认，请勿重复扫描!!!");
+            return "/program/vote/error";
         }
         VotePeople votePeople = new VotePeople();
         votePeople.setMatchId(match.getMatchId());
@@ -352,10 +354,12 @@ public class ProgramController {
         }
         Match match = matchService.findByIsStart(1).get(0);
         if(votePeopleService.findByOpenIdAndMatchId(openid,match.getMatchId()).size()<=0){
+            request.setAttribute("msg", "您没有投票权限!!!");
             return "/program/vote/error";
         }
         MatchProject matchProject = matchProjectService.findByMatchIdAndIsDelete(match.getMatchId(),0).get(0);
         if(voteTicketService.findByVotePeopleIdOpenIdAndMatchProjectId(openid,matchProject.getMatchProjectId()).size()>0){
+            request.setAttribute("msg", "请勿重复投票");
             return "/program/vote/error";
         }
         VoteTicket voteTicket = new VoteTicket();

@@ -12,7 +12,7 @@
 </head>
 <body>
     <form action="/web/program/vote/mobile/sure" method="post" style="width: 300px;height: 100px;margin: 0 auto;margin-top: 100px;">
-        <input type="submit" value="确认投票" style="width: 300px;height: 100px;">
+        <input type="submit" value="确认投票" style="width: 100%;height: 200px;font-size: 50px;">
     </form>
 </body>
 </html>
