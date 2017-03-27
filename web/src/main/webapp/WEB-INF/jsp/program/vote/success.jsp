@@ -11,6 +11,9 @@
     <title>消息</title>
 </head>
 <body>
-成功！！！
+<div style="width: 100%;text-align: center;height: 100%;font-size: 50px;padding-top: 40%;">
+    操作成功！！！
+</div>
+
 </body>
 </html>

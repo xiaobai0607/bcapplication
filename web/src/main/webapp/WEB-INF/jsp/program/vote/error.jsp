@@ -12,6 +12,8 @@
     <title>消息</title>
 </head>
 <body>
-<div style="width: 100%;text-align: center;height: 100px;top: 50%;margin-top: -50px;"></div>
+<div style="width: 100%;text-align: center;height: 100%;font-size: 50px;padding-top: 40%;">
+    服务错误！！！！！！
+</div>
 </body>
 </html>
